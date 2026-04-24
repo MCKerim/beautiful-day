@@ -3,8 +3,8 @@ import { ChunkManager } from '../terrain/ChunkManager';
 
 const MOVE_SPEED = 6;
 const PLAYER_HEIGHT = 1.7;
-const HEAD_BOB_SPEED = 7;
-const HEAD_BOB_AMOUNT = 0.055;
+const HEAD_BOB_SPEED = 6;
+const HEAD_BOB_AMOUNT = 0.13;
 
 export class FPSController {
   private camera: THREE.Camera;
@@ -63,7 +63,7 @@ export class FPSController {
 
     // Apply rotation via quaternion (yaw then pitch)
     const qYaw   = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
-    const qPitch  = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
+    const qPitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
     this.camera.quaternion.copy(qYaw).multiply(qPitch);
   }
 }
