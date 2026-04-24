@@ -91,10 +91,6 @@ export class PostFXPipeline {
           float line = sin(uv.y * uRes.y * 3.14159) * 0.5 + 0.5;
           col *= 0.93 + 0.07 * line;
 
-          // --- Vignette ---
-          float vign = 1.0 - smoothstep(0.4, 0.9, length(centered) * 0.72);
-          col *= vign;
-
           // --- Occasional horizontal tracking noise (rare) ---
           float trackBand = step(0.997, rand(vec2(floor(uTime * 8.0), uv.y * 12.0)));
           col += trackBand * 0.06 * vec3(1.0, 0.95, 0.8);

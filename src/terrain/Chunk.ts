@@ -2,17 +2,13 @@ import * as THREE from 'three';
 import { createNoise2D } from 'simplex-noise';
 
 export const CHUNK_SIZE = 64;
-export const CHUNK_SEGMENTS = 32;
+export const CHUNK_SEGMENTS = 48;
 
 const noise2D = createNoise2D();
 
 function sampleHeight(wx: number, wz: number): number {
-  // Layered noise for rolling hills
-  let h = 0;
-  h += noise2D(wx * 0.008, wz * 0.008) * 10;  // large hills
-  h += noise2D(wx * 0.025, wz * 0.025) * 3;   // medium bumps
-  h += noise2D(wx * 0.07,  wz * 0.07)  * 0.8; // small detail
-  return h;
+  return noise2D(wx * 0.011, wz * 0.011) * 3.5
+       + noise2D(wx * 0.022, wz * 0.022) * 0.8;
 }
 
 export function getHeightAt(wx: number, wz: number): number {
