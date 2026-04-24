@@ -4,7 +4,6 @@ export class AudioManager {
   init() {
     if (this.ctx) return;
     this.ctx = new AudioContext();
-    this.buildWind();
     this.buildTapeHiss();
   }
 
@@ -24,17 +23,6 @@ export class AudioManager {
     return src;
   }
 
-  private buildWind() {
-    const ctx  = this.ctx!;
-    const src  = this.loopedNoise(3);
-    const lp   = ctx.createBiquadFilter();
-    lp.type            = 'lowpass';
-    lp.frequency.value = 500;
-    const gain         = ctx.createGain();
-    gain.gain.value    = 0.07;
-    src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
-  }
-
   private buildTapeHiss() {
     const ctx  = this.ctx!;
     const src  = this.loopedNoise(2);
@@ -49,7 +37,7 @@ export class AudioManager {
     lp.frequency.value = 4000;
 
     const gain         = ctx.createGain();
-    gain.gain.value    = 0.025;
+    gain.gain.value    = 0.012;
 
     src.connect(hp); hp.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
   }
