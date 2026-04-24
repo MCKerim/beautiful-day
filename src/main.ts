@@ -62,7 +62,7 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const elapsed = clock.getElapsedTime();
 
-  player.update(dt, chunkManager);
+  if (document.pointerLockElement) player.update(dt, chunkManager);
   chunkManager.update(camera.position);
   sky.update(elapsed);
   postfx.render(elapsed);
