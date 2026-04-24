@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export class Sky {
-  private clouds: THREE.Mesh[] = [];
+  private clouds: THREE.Group[] = [];
 
   constructor(scene: THREE.Scene) {
     this.buildSky(scene);
@@ -10,9 +10,8 @@ export class Sky {
   }
 
   private buildSky(scene: THREE.Scene) {
-    // Large sphere with gradient shader as the sky dome
     const geo = new THREE.SphereGeometry(400, 16, 8);
-    geo.scale(-1, 1, 1); // invert so we see it from inside
+    geo.scale(-1, 1, 1);
 
     const mat = new THREE.ShaderMaterial({
       uniforms: {
@@ -34,7 +33,6 @@ export class Sky {
         varying vec3 vWorldPos;
         void main() {
           float t = clamp((normalize(vWorldPos).y + horizon) / (1.0 + horizon), 0.0, 1.0);
-          // slight overexposure on the lower sky
           vec3 col = mix(bottomColor, topColor, pow(t, 0.6));
           gl_FragColor = vec4(col, 1.0);
         }
@@ -49,7 +47,6 @@ export class Sky {
   }
 
   private buildSun(scene: THREE.Scene) {
-    // Blown-out sun disk — just a bright sprite
     const geo = new THREE.CircleGeometry(8, 16);
     const mat = new THREE.MeshBasicMaterial({
       color: 0xfffce0,
@@ -63,7 +60,6 @@ export class Sky {
     sun.lookAt(0, 0, 0);
     scene.add(sun);
 
-    // Soft halo
     const haloGeo = new THREE.CircleGeometry(22, 16);
     const haloMat = new THREE.MeshBasicMaterial({
       color: 0xfffce0,
@@ -79,51 +75,56 @@ export class Sky {
   }
 
   private buildClouds(scene: THREE.Scene) {
-    const cloudMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
+    // Soft radial gradient baked into a canvas texture
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+    const grd = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grd.addColorStop(0,    'rgba(255,255,255,1.0)');
+    grd.addColorStop(0.35, 'rgba(255,255,255,0.9)');
+    grd.addColorStop(1,    'rgba(255,255,255,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, 128, 128);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
       transparent: true,
-      opacity: 0.82,
       depthWrite: false,
     });
 
-    for (let i = 0; i < 18; i++) {
-      const angle = (i / 18) * Math.PI * 2;
-      const radius = 80 + Math.random() * 120;
+    for (let i = 0; i < 22; i++) {
+      const angle = (i / 22) * Math.PI * 2 + Math.random() * 0.3;
+      const radius = 100 + Math.random() * 160;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
-      const y = 38 + Math.random() * 20;
+      const y = 42 + Math.random() * 22;
 
-      const cloud = this.makeCloud(x, y, z, cloudMat);
-      scene.add(cloud);
-      this.clouds.push(cloud);
+      const group = new THREE.Group();
+      group.position.set(x, y, z);
+
+      const puffs = 3 + Math.floor(Math.random() * 3);
+      for (let p = 0; p < puffs; p++) {
+        const sprite = new THREE.Sprite(mat);
+        const w = 18 + Math.random() * 20;
+        sprite.scale.set(w, w * (0.55 + Math.random() * 0.2), 1);
+        sprite.position.set(
+          (p - puffs / 2) * 13 + Math.random() * 5,
+          Math.random() * 3 - 1,
+          0
+        );
+        group.add(sprite);
+      }
+
+      scene.add(group);
+      this.clouds.push(group);
     }
-  }
-
-  private makeCloud(x: number, y: number, z: number, mat: THREE.MeshBasicMaterial): THREE.Mesh {
-    // Cloud = a few overlapping low-poly quads
-    const group = new THREE.Group();
-    const puffs = 3 + Math.floor(Math.random() * 3);
-
-    for (let i = 0; i < puffs; i++) {
-      const w = 10 + Math.random() * 14;
-      const h = 4 + Math.random() * 5;
-      const geo = new THREE.PlaneGeometry(w, h);
-      const puff = new THREE.Mesh(geo, mat);
-      puff.position.set((i - puffs / 2) * 7 + Math.random() * 4, Math.random() * 2, 0);
-      group.add(puff);
-    }
-
-    const proxy = new THREE.Mesh(new THREE.BufferGeometry(), mat);
-    proxy.position.set(x, y, z);
-    proxy.add(group);
-    return proxy;
   }
 
   update(_elapsed: number) {
-    // Slowly drift clouds
-    for (let i = 0; i < this.clouds.length; i++) {
-      this.clouds[i].position.x += 0.005;
-      this.clouds[i].position.z += 0.002;
+    for (const cloud of this.clouds) {
+      cloud.position.x += 0.005;
+      cloud.position.z += 0.002;
     }
   }
 }

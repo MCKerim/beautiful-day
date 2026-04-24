@@ -1,10 +1,19 @@
 import * as THREE from 'three';
 import { ChunkManager } from '../terrain/ChunkManager';
 
-const MOVE_SPEED = 6;
+const MOVE_SPEED   = 6;
+const SPRINT_SPEED = 13;
 const PLAYER_HEIGHT = 1.7;
-const HEAD_BOB_SPEED = 6;
-const HEAD_BOB_AMOUNT = 0.13;
+
+// Normal walk
+const BOB_SPEED_WALK    = 6;
+const BOB_VERTICAL_WALK = 0.07;
+const BOB_LATERAL_WALK  = 0.025;
+
+// Sprint
+const BOB_SPEED_SPRINT    = 10;
+const BOB_VERTICAL_SPRINT = 0.18;
+const BOB_LATERAL_SPRINT  = 0.07;
 
 export class FPSController {
   private camera: THREE.Camera;
@@ -13,6 +22,7 @@ export class FPSController {
   private keys: Record<string, boolean> = {};
   private bobTime = 0;
   private baseY = PLAYER_HEIGHT;
+  private lateralBob = 0; // tracked to apply as delta, avoiding world-space drift
 
   constructor(camera: THREE.Camera, canvas: HTMLElement) {
     this.camera = camera;
@@ -29,9 +39,9 @@ export class FPSController {
   }
 
   update(dt: number, terrain: ChunkManager) {
-    const moving = this.keys['KeyW'] || this.keys['KeyS'] || this.keys['KeyA'] || this.keys['KeyD'];
+    const moving   = this.keys['KeyW'] || this.keys['KeyS'] || this.keys['KeyA'] || this.keys['KeyD'];
+    const sprinting = moving && (this.keys['ShiftLeft'] || this.keys['ShiftRight']);
 
-    // Movement direction from yaw only
     const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     const right   = new THREE.Vector3( Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     const vel     = new THREE.Vector3();
@@ -42,7 +52,7 @@ export class FPSController {
     if (this.keys['KeyD']) vel.addScaledVector(right,    1);
 
     if (vel.lengthSq() > 0) vel.normalize();
-    vel.multiplyScalar(MOVE_SPEED * dt);
+    vel.multiplyScalar((sprinting ? SPRINT_SPEED : MOVE_SPEED) * dt);
 
     this.camera.position.add(vel);
 
@@ -51,17 +61,30 @@ export class FPSController {
     this.baseY = groundY + PLAYER_HEIGHT;
 
     // Head bob
-    let bobOffset = 0;
+    const bobSpeed    = sprinting ? BOB_SPEED_SPRINT    : BOB_SPEED_WALK;
+    const bobVertical = sprinting ? BOB_VERTICAL_SPRINT : BOB_VERTICAL_WALK;
+    const bobLateral  = sprinting ? BOB_LATERAL_SPRINT  : BOB_LATERAL_WALK;
+
+    let verticalOffset = 0;
+    let newLateralBob  = 0;
+
     if (moving) {
-      this.bobTime += dt * HEAD_BOB_SPEED;
-      bobOffset = Math.sin(this.bobTime) * HEAD_BOB_AMOUNT;
+      this.bobTime   += dt * bobSpeed;
+      verticalOffset  = Math.sin(this.bobTime) * bobVertical;
+      // Half-frequency lateral sway so it shifts left/right once per two steps
+      newLateralBob   = Math.sin(this.bobTime * 0.5) * bobLateral;
     } else {
       this.bobTime = 0;
     }
 
-    this.camera.position.y = this.baseY + bobOffset;
+    this.camera.position.y = this.baseY + verticalOffset;
 
-    // Apply rotation via quaternion (yaw then pitch)
+    // Apply lateral sway as a delta in local right direction to avoid world drift
+    const lateralDelta = newLateralBob - this.lateralBob;
+    this.lateralBob    = newLateralBob;
+    this.camera.position.addScaledVector(right, lateralDelta);
+
+    // Rotation
     const qYaw   = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
     const qPitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
     this.camera.quaternion.copy(qYaw).multiply(qPitch);

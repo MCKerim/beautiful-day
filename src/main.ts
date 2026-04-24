@@ -12,7 +12,7 @@ document.body.appendChild(renderer.domElement);
 
 // --- Scene ---
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0xd4e8ff, 60, 220);
+scene.fog = new THREE.Fog(0xe8f4ff, 120, 380);
 
 // --- Camera ---
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);

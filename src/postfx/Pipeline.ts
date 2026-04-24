@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
-// Internal render resolution — camcorder is sharper than VHS
-const RENDER_SCALE = 0.72;
+const RENDER_SCALE = 0.55;
 
 export class PostFXPipeline {
   private renderer: THREE.WebGLRenderer;
@@ -70,23 +69,29 @@ export class PostFXPipeline {
             return;
           }
 
-          vec3 col = texture2D(tDiffuse, uv).rgb;
+          // --- Chromatic aberration ---
+          float ca = 0.002;
+          float r = texture2D(tDiffuse, uv + vec2( ca, 0.0)).r;
+          float g = texture2D(tDiffuse, uv).g;
+          float b = texture2D(tDiffuse, uv + vec2(-ca, 0.0)).b;
+          vec3 col = vec3(r, g, b);
 
-          // --- AGC highlight compression (auto-gain control) ---
-          col = col / (col + vec3(0.14));
-          col *= 1.18;
+          // --- Color grade: bright warm day ---
+          col = pow(col, vec3(0.80));
+          col *= vec3(1.05, 1.02, 0.94);
+          col *= 1.08;
 
-          // --- Saturation boost (camcorder colors are punchy) ---
-          float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
-          col = mix(vec3(lum), col, 1.22);
-
-          // --- Fine digital noise ---
-          float grain = rand(uv + fract(uTime * 0.61)) * 0.032 - 0.016;
+          // --- Film grain ---
+          float grain = rand(uv + fract(uTime * 0.31)) * 0.09 - 0.045;
           col += grain;
 
-          // --- Interlacing (every other horizontal line slightly dim) ---
-          float interlace = mod(floor(vUv.y * uRes.y), 2.0);
-          col *= 0.975 + 0.025 * interlace;
+          // --- Scan lines ---
+          float line = sin(uv.y * uRes.y * 3.14159) * 0.5 + 0.5;
+          col *= 0.93 + 0.07 * line;
+
+          // --- Occasional horizontal tracking noise ---
+          float trackBand = step(0.997, rand(vec2(floor(uTime * 8.0), uv.y * 12.0)));
+          col += trackBand * 0.06 * vec3(1.0, 0.95, 0.8);
 
           gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
         }
