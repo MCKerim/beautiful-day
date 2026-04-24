@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ChunkManager } from '../terrain/ChunkManager';
+import { AudioManager } from '../audio/AudioManager';
 
 const MOVE_SPEED   = 4;
 const SPRINT_SPEED = 8;
@@ -19,15 +20,18 @@ const BOB_ROLL_SPRINT     = 0.014;
 
 export class FPSController {
   private camera: THREE.Camera;
+  private audio: AudioManager;
   private yaw = 0;
   private pitch = 0;
   private keys: Record<string, boolean> = {};
   private bobTime = 0;
+  private prevBobSin = 0;
   private baseY = PLAYER_HEIGHT;
-  private lateralBob = 0; // tracked to apply as delta, avoiding world-space drift
+  private lateralBob = 0;
 
-  constructor(camera: THREE.Camera, canvas: HTMLElement) {
+  constructor(camera: THREE.Camera, canvas: HTMLElement, audio: AudioManager) {
     this.camera = camera;
+    this.audio  = audio;
 
     document.addEventListener('keydown', (e) => { this.keys[e.code] = true; });
     document.addEventListener('keyup',   (e) => { this.keys[e.code] = false; });
@@ -74,11 +78,18 @@ export class FPSController {
 
     if (moving) {
       this.bobTime   += dt * bobSpeed;
-      verticalOffset  = Math.sin(this.bobTime) * bobVertical;
-      newLateralBob   = Math.sin(this.bobTime) * bobLateral;
+      const bobSin    = Math.sin(this.bobTime);
+      verticalOffset  = bobSin * bobVertical;
+      newLateralBob   = bobSin * bobLateral;
       roll            = -Math.sin(this.bobTime * 0.5) * bobRoll;
+
+      // Footstep on each zero-crossing (two per cycle = one per foot)
+      if (this.prevBobSin > 0 && bobSin <= 0) this.audio.footstep(sprinting);
+      if (this.prevBobSin < 0 && bobSin >= 0) this.audio.footstep(sprinting);
+      this.prevBobSin = bobSin;
     } else {
-      this.bobTime = 0;
+      this.bobTime    = 0;
+      this.prevBobSin = 0;
     }
 
     this.camera.position.y = this.baseY + verticalOffset;

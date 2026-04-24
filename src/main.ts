@@ -3,6 +3,7 @@ import { ChunkManager } from './terrain/ChunkManager';
 import { Sky } from './sky/Sky';
 import { FPSController } from './player/FPSController';
 import { PostFXPipeline } from './postfx/Pipeline';
+import { AudioManager } from './audio/AudioManager';
 
 // --- Renderer ---
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -27,18 +28,22 @@ const ambient = new THREE.AmbientLight(0x88aacc, 0.6);
 scene.add(ambient);
 
 // --- Systems ---
+const audio = new AudioManager();
 const sky = new Sky(scene);
 const chunkManager = new ChunkManager(scene);
-const player = new FPSController(camera, renderer.domElement);
+const player = new FPSController(camera, renderer.domElement, audio);
 const postfx = new PostFXPipeline(renderer, scene, camera);
 
 // --- Pointer lock overlay ---
 const overlay = document.getElementById('overlay')!;
 overlay.addEventListener('click', () => {
   renderer.domElement.requestPointerLock();
+  audio.init();
 });
 document.addEventListener('pointerlockchange', () => {
-  overlay.style.display = document.pointerLockElement ? 'none' : 'flex';
+  const locked = !!document.pointerLockElement;
+  overlay.style.display = locked ? 'none' : 'flex';
+  locked ? audio.resume() : audio.suspend();
 });
 
 // --- Resize ---
