@@ -14,7 +14,6 @@ export class PostFXPipeline {
   // Full-screen quad for compositing
   private quadScene: THREE.Scene;
   private quadCamera: THREE.OrthographicCamera;
-  private quadMesh: THREE.Mesh;
   private material: THREE.ShaderMaterial;
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
@@ -109,7 +108,6 @@ export class PostFXPipeline {
 
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material);
     this.quadScene.add(quad);
-    this.quadMesh = quad;
   }
 
   resize(w: number, h: number) {

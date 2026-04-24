@@ -113,19 +113,13 @@ export class Sky {
       group.add(puff);
     }
 
-    // Convert group to a merged mesh (simple approach: just use Group as Mesh parent)
-    const merged = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
-    merged.visible = false;
-    const wrapper = group as unknown as THREE.Mesh;
-    // Actually just return the group treated as a scene object
-    // We'll store in clouds array via a proxy mesh for the update
     const proxy = new THREE.Mesh(new THREE.BufferGeometry(), mat);
     proxy.position.set(x, y, z);
     proxy.add(group);
     return proxy;
   }
 
-  update(elapsed: number) {
+  update(_elapsed: number) {
     // Slowly drift clouds
     for (let i = 0; i < this.clouds.length; i++) {
       this.clouds[i].position.x += 0.005;
