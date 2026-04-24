@@ -1,19 +1,21 @@
 import * as THREE from 'three';
 import { ChunkManager } from '../terrain/ChunkManager';
 
-const MOVE_SPEED   = 6;
-const SPRINT_SPEED = 13;
+const MOVE_SPEED   = 4;
+const SPRINT_SPEED = 8;
 const PLAYER_HEIGHT = 1.7;
 
 // Normal walk
-const BOB_SPEED_WALK    = 6;
+const BOB_SPEED_WALK    = 3.5;
 const BOB_VERTICAL_WALK = 0.07;
-const BOB_LATERAL_WALK  = 0.025;
+const BOB_LATERAL_WALK  = 0.02;
+const BOB_ROLL_WALK     = 0.006;
 
 // Sprint
-const BOB_SPEED_SPRINT    = 10;
-const BOB_VERTICAL_SPRINT = 0.18;
-const BOB_LATERAL_SPRINT  = 0.07;
+const BOB_SPEED_SPRINT    = 6;
+const BOB_VERTICAL_SPRINT = 0.16;
+const BOB_LATERAL_SPRINT  = 0.05;
+const BOB_ROLL_SPRINT     = 0.014;
 
 export class FPSController {
   private camera: THREE.Camera;
@@ -64,15 +66,17 @@ export class FPSController {
     const bobSpeed    = sprinting ? BOB_SPEED_SPRINT    : BOB_SPEED_WALK;
     const bobVertical = sprinting ? BOB_VERTICAL_SPRINT : BOB_VERTICAL_WALK;
     const bobLateral  = sprinting ? BOB_LATERAL_SPRINT  : BOB_LATERAL_WALK;
+    const bobRoll     = sprinting ? BOB_ROLL_SPRINT     : BOB_ROLL_WALK;
 
     let verticalOffset = 0;
     let newLateralBob  = 0;
+    let roll           = 0;
 
     if (moving) {
       this.bobTime   += dt * bobSpeed;
       verticalOffset  = Math.sin(this.bobTime) * bobVertical;
-      // Half-frequency lateral sway so it shifts left/right once per two steps
-      newLateralBob   = Math.sin(this.bobTime * 0.5) * bobLateral;
+      newLateralBob   = Math.sin(this.bobTime) * bobLateral;
+      roll            = -Math.sin(this.bobTime * 0.5) * bobRoll;
     } else {
       this.bobTime = 0;
     }
@@ -84,9 +88,10 @@ export class FPSController {
     this.lateralBob    = newLateralBob;
     this.camera.position.addScaledVector(right, lateralDelta);
 
-    // Rotation
+    // Rotation — roll tilt makes the left/right clearly readable to the eye
     const qYaw   = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
     const qPitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
-    this.camera.quaternion.copy(qYaw).multiply(qPitch);
+    const qRoll  = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), roll);
+    this.camera.quaternion.copy(qYaw).multiply(qPitch).multiply(qRoll);
   }
 }
