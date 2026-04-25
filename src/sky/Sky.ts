@@ -1,12 +1,9 @@
 import * as THREE from 'three';
 
 export class Sky {
-  private clouds: THREE.Group[] = [];
-
   constructor(scene: THREE.Scene) {
     this.buildSky(scene);
     this.buildSun(scene);
-    this.buildClouds(scene);
   }
 
   private buildSky(scene: THREE.Scene) {
@@ -74,57 +71,6 @@ export class Sky {
     scene.add(halo);
   }
 
-  private buildClouds(scene: THREE.Scene) {
-    // Soft radial gradient baked into a canvas texture
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 128;
-    const ctx = canvas.getContext('2d')!;
-    const grd = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    grd.addColorStop(0,    'rgba(255,255,255,1.0)');
-    grd.addColorStop(0.35, 'rgba(255,255,255,0.9)');
-    grd.addColorStop(1,    'rgba(255,255,255,0)');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, 128, 128);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({
-      map: tex,
-      transparent: true,
-      depthWrite: false,
-    });
-
-    for (let i = 0; i < 22; i++) {
-      const angle = (i / 22) * Math.PI * 2 + Math.random() * 0.3;
-      const radius = 100 + Math.random() * 160;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const y = 42 + Math.random() * 22;
-
-      const group = new THREE.Group();
-      group.position.set(x, y, z);
-
-      const puffs = 3 + Math.floor(Math.random() * 3);
-      for (let p = 0; p < puffs; p++) {
-        const sprite = new THREE.Sprite(mat);
-        const w = 18 + Math.random() * 20;
-        sprite.scale.set(w, w * (0.55 + Math.random() * 0.2), 1);
-        sprite.position.set(
-          (p - puffs / 2) * 13 + Math.random() * 5,
-          Math.random() * 3 - 1,
-          0
-        );
-        group.add(sprite);
-      }
-
-      scene.add(group);
-      this.clouds.push(group);
-    }
-  }
-
   update(_elapsed: number) {
-    for (const cloud of this.clouds) {
-      cloud.position.x += 0.005;
-      cloud.position.z += 0.002;
-    }
   }
 }
