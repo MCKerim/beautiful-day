@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 const RENDER_SCALE = 0.55;
 
@@ -15,12 +15,16 @@ export class PostFXPipeline {
   private quadCamera: THREE.OrthographicCamera;
   private material: THREE.ShaderMaterial;
 
-  constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
+  constructor(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+  ) {
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
 
-    const w = Math.floor(window.innerWidth  * RENDER_SCALE);
+    const w = Math.floor(window.innerWidth * RENDER_SCALE);
     const h = Math.floor(window.innerHeight * RENDER_SCALE);
 
     this.renderTarget = new THREE.WebGLRenderTarget(w, h, {
@@ -30,13 +34,13 @@ export class PostFXPipeline {
     });
 
     this.quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    this.quadScene  = new THREE.Scene();
+    this.quadScene = new THREE.Scene();
 
     this.material = new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: this.renderTarget.texture },
-        uTime:    { value: 0 },
-        uRes:     { value: new THREE.Vector2(w, h) },
+        uTime: { value: 0 },
+        uRes: { value: new THREE.Vector2(w, h) },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -69,12 +73,7 @@ export class PostFXPipeline {
             return;
           }
 
-          // --- Chromatic aberration ---
-          float ca = 0.002;
-          float r = texture2D(tDiffuse, uv + vec2( ca, 0.0)).r;
-          float g = texture2D(tDiffuse, uv).g;
-          float b = texture2D(tDiffuse, uv + vec2(-ca, 0.0)).b;
-          vec3 col = vec3(r, g, b);
+          vec3 col = texture2D(tDiffuse, uv).rgb;
 
           // --- Color grade: bright warm day ---
           col = pow(col, vec3(0.80));
@@ -86,8 +85,8 @@ export class PostFXPipeline {
           col += grain;
 
           // --- Scan lines ---
-          float line = sin(uv.y * uRes.y * 3.14159) * 0.5 + 0.5;
-          col *= 0.93 + 0.07 * line;
+          //float line = sin(uv.y * uRes.y * 3.14159) * 0.5 + 0.5;
+          //col *= 0.93 + 0.07 * line;
 
           // --- Occasional horizontal tracking noise ---
           float trackBand = step(0.997, rand(vec2(floor(uTime * 8.0), uv.y * 12.0)));
