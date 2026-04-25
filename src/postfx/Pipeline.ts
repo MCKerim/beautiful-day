@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-const RENDER_SCALE = 0.55;
+const RENDER_SCALE = 0.92;
 
 export class PostFXPipeline {
   private renderer: THREE.WebGLRenderer;
@@ -28,8 +28,8 @@ export class PostFXPipeline {
     const h = Math.floor(window.innerHeight * RENDER_SCALE);
 
     this.renderTarget = new THREE.WebGLRenderTarget(w, h, {
-      minFilter: THREE.NearestFilter,
-      magFilter: THREE.NearestFilter,
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
       format: THREE.RGBAFormat,
     });
 
@@ -62,10 +62,10 @@ export class PostFXPipeline {
         void main() {
           vec2 uv = vUv;
 
-          // --- Minimal lens barrel (consumer optics) ---
-          vec2 centered = uv * 2.0 - 1.0;
-          float r2 = dot(centered, centered);
-          centered *= 1.0 + 0.006 * r2;
+          // --- Lens barrel ---
+          vec2 screen = uv * 2.0 - 1.0;
+          float r2 = dot(screen, screen);
+          vec2 centered = screen * (1.0 + 0.006 * r2);
           uv = centered * 0.5 + 0.5;
 
           if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
@@ -73,20 +73,22 @@ export class PostFXPipeline {
             return;
           }
 
-          vec3 col = texture2D(tDiffuse, uv).rgb;
+          // --- Soft analog blur (5-tap tent, ~2px radius) ---
+          vec2 px = 1.2 / uRes;
+          vec3 col  = texture2D(tDiffuse, uv).rgb                         * 0.36;
+          col += texture2D(tDiffuse, uv + vec2( px.x,  px.y)).rgb         * 0.16;
+          col += texture2D(tDiffuse, uv + vec2(-px.x,  px.y)).rgb         * 0.16;
+          col += texture2D(tDiffuse, uv + vec2( px.x, -px.y)).rgb         * 0.16;
+          col += texture2D(tDiffuse, uv + vec2(-px.x, -px.y)).rgb         * 0.16;
 
-          // --- Color grade: bright warm day ---
+          // --- Color grade ---
           col = pow(col, vec3(0.80));
           col *= vec3(1.05, 1.02, 0.94);
           col *= 1.08;
 
           // --- Film grain ---
-          float grain = rand(uv + fract(uTime * 0.31)) * 0.09 - 0.045;
+          float grain = rand(uv + fract(uTime * 0.31)) * 0.12 - 0.06;
           col += grain;
-
-          // --- Scan lines ---
-          //float line = sin(uv.y * uRes.y * 3.14159) * 0.5 + 0.5;
-          //col *= 0.93 + 0.07 * line;
 
           // --- Occasional horizontal tracking noise ---
           float trackBand = step(0.997, rand(vec2(floor(uTime * 8.0), uv.y * 12.0)));
