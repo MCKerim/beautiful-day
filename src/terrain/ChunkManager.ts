@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { Chunk, CHUNK_SIZE, getHeightAt } from './Chunk';
+import { spawnPropsForChunk } from '../props/PropSpawner';
 
 const LOAD_RADIUS = 3; // chunks in each direction
 
 export class ChunkManager {
   private scene: THREE.Scene;
   private chunks = new Map<string, Chunk>();
+  private props = new Map<string, THREE.Group>();
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -29,6 +31,12 @@ export class ChunkManager {
           const chunk = new Chunk(cx, cz);
           this.scene.add(chunk.mesh);
           this.chunks.set(k, chunk);
+
+          const propGroup = spawnPropsForChunk(cx, cz);
+          if (propGroup) {
+            this.scene.add(propGroup);
+            this.props.set(k, propGroup);
+          }
         }
       }
     }
@@ -42,6 +50,18 @@ export class ChunkManager {
         this.scene.remove(chunk.mesh);
         chunk.dispose();
         this.chunks.delete(k);
+
+        const propGroup = this.props.get(k);
+        if (propGroup) {
+          this.scene.remove(propGroup);
+          propGroup.traverse((obj) => {
+            if (obj instanceof THREE.Mesh) {
+              obj.geometry.dispose();
+              (obj.material as THREE.Material).dispose();
+            }
+          });
+          this.props.delete(k);
+        }
       }
     }
   }
