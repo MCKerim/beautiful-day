@@ -4,7 +4,7 @@ import { AudioManager } from '../audio/AudioManager';
 
 const MOVE_SPEED   = 4;
 const SPRINT_SPEED = 8;
-const PLAYER_HEIGHT = 1.7;
+const PLAYER_HEIGHT = 1.6;
 
 // Normal walk
 const BOB_SPEED_WALK    = 3.5;
@@ -61,6 +61,22 @@ export class FPSController {
     vel.multiplyScalar((sprinting ? SPRINT_SPEED : MOVE_SPEED) * dt);
 
     this.camera.position.add(vel);
+
+    // Cylinder collision against props (XZ plane only)
+    const PLAYER_RADIUS = 0.3;
+    for (const { position, radius } of terrain.getActiveProps()) {
+      if (radius <= 0) continue;
+      const dx = this.camera.position.x - position.x;
+      const dz = this.camera.position.z - position.z;
+      const distSq = dx * dx + dz * dz;
+      const minDist = radius + PLAYER_RADIUS;
+      if (distSq < minDist * minDist && distSq > 0.0001) {
+        const dist = Math.sqrt(distSq);
+        const push = (minDist - dist) / dist;
+        this.camera.position.x += dx * push;
+        this.camera.position.z += dz * push;
+      }
+    }
 
     // Snap to terrain
     const groundY = terrain.getHeightAt(this.camera.position.x, this.camera.position.z);

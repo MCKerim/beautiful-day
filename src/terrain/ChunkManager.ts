@@ -66,6 +66,14 @@ export class ChunkManager {
     }
   }
 
+  getActiveProps(): Array<{ position: THREE.Vector3; radius: number }> {
+    const result: Array<{ position: THREE.Vector3; radius: number }> = [];
+    for (const group of this.props.values()) {
+      result.push({ position: group.position, radius: group.userData.collisionRadius as number });
+    }
+    return result;
+  }
+
   // Used by FPS controller to get ground height at a world position
   getHeightAt(wx: number, wz: number): number {
     return getHeightAt(wx, wz);

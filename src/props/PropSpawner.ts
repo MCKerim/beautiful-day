@@ -2,7 +2,11 @@ import * as THREE from 'three';
 import { getHeightAt, CHUNK_SIZE } from '../terrain/Chunk';
 import { buildChair, buildTable, buildDoorframe, buildStreetlight, buildTV, buildCabinet } from './builders';
 
-const SPAWN_CHANCE = 0.25;
+const SPAWN_CHANCE = 0.1;
+const PROP_SCALE = 1.6;
+
+// XZ cylinder radius for pushback collision (0 = walk-through), before scale
+const COLLISION_RADII = [0.45, 0.85, 0.0, 0.18, 0.5, 0.5];
 
 function seededRand(seed: number): () => number {
   let s = seed | 0;
@@ -27,13 +31,16 @@ export function spawnPropsForChunk(cx: number, cz: number): THREE.Group | null {
 
   const wx = cx * CHUNK_SIZE + (rand() - 0.5) * CHUNK_SIZE * 0.8;
   const wz = cz * CHUNK_SIZE + (rand() - 0.5) * CHUNK_SIZE * 0.8;
-  const sink = 0.1 + rand() * 0.35;
+  const underground = rand() < 0.5;
+  const sink = underground ? 0.35 + rand() * 1.2 : 0.05 + rand() * 0.08;
   const wy = getHeightAt(wx, wz) - sink;
 
+  group.scale.setScalar(PROP_SCALE);
   group.position.set(wx, wy, wz);
   group.rotation.y = rand() * Math.PI * 2;
-  group.rotation.x = (rand() - 0.5) * 0.1;
-  group.rotation.z = (rand() - 0.5) * 0.1;
+  group.rotation.x = rand() * Math.PI * 2;
+  group.rotation.z = rand() * Math.PI * 2;
+  group.userData.collisionRadius = COLLISION_RADII[idx] * PROP_SCALE;
 
   return group;
 }
