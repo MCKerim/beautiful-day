@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 
 export class Sky {
-  constructor(scene: THREE.Scene) {
-    this.buildSky(scene);
-    this.buildSun(scene);
+  readonly group = new THREE.Group();
+
+  constructor() {
+    this.buildSky();
+    this.buildSun();
   }
 
-  private buildSky(scene: THREE.Scene) {
+  private buildSky() {
     const geo = new THREE.SphereGeometry(400, 16, 8);
     geo.scale(-1, 1, 1);
 
@@ -40,10 +42,10 @@ export class Sky {
 
     const dome = new THREE.Mesh(geo, mat);
     dome.renderOrder = -1;
-    scene.add(dome);
+    this.group.add(dome);
   }
 
-  private buildSun(scene: THREE.Scene) {
+  private buildSun() {
     const geo = new THREE.CircleGeometry(8, 16);
     const mat = new THREE.MeshBasicMaterial({
       color: 0xfffce0,
@@ -55,7 +57,7 @@ export class Sky {
     const sun = new THREE.Mesh(geo, mat);
     sun.position.set(160, 200, 80).normalize().multiplyScalar(390);
     sun.lookAt(0, 0, 0);
-    scene.add(sun);
+    this.group.add(sun);
 
     const haloGeo = new THREE.CircleGeometry(22, 16);
     const haloMat = new THREE.MeshBasicMaterial({
@@ -68,7 +70,7 @@ export class Sky {
     const halo = new THREE.Mesh(haloGeo, haloMat);
     halo.position.copy(sun.position);
     halo.lookAt(0, 0, 0);
-    scene.add(halo);
+    this.group.add(halo);
   }
 
   update(_elapsed: number) {

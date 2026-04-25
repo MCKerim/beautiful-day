@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ChunkManager } from '../terrain/ChunkManager';
+import type { IWorld } from '../worlds/IWorld';
 import { AudioManager } from '../audio/AudioManager';
 
 const MOVE_SPEED   = 4;
@@ -44,8 +44,12 @@ export class FPSController {
     });
   }
 
-  update(dt: number, terrain: ChunkManager) {
-    const moving   = this.keys['KeyW'] || this.keys['KeyS'] || this.keys['KeyA'] || this.keys['KeyD'];
+  get isMoving(): boolean {
+    return !!(this.keys['KeyW'] || this.keys['KeyS'] || this.keys['KeyA'] || this.keys['KeyD']);
+  }
+
+  update(dt: number, world: IWorld) {
+    const moving   = this.isMoving;
     const sprinting = moving && (this.keys['ShiftLeft'] || this.keys['ShiftRight']);
 
     const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
@@ -64,7 +68,7 @@ export class FPSController {
 
     // Cylinder collision against props (XZ plane only)
     const PLAYER_RADIUS = 0.3;
-    for (const { position, radius } of terrain.getActiveProps()) {
+    for (const { position, radius } of world.getActiveProps()) {
       if (radius <= 0) continue;
       const dx = this.camera.position.x - position.x;
       const dz = this.camera.position.z - position.z;
@@ -79,7 +83,7 @@ export class FPSController {
     }
 
     // Snap to terrain
-    const groundY = terrain.getHeightAt(this.camera.position.x, this.camera.position.z);
+    const groundY = world.getHeightAt(this.camera.position.x, this.camera.position.z);
     this.baseY = groundY + PLAYER_HEIGHT;
 
     // Head bob

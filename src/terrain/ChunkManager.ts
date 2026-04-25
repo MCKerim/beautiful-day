@@ -89,4 +89,23 @@ export class ChunkManager {
   getHeightAt(wx: number, wz: number): number {
     return getHeightAt(wx, wz);
   }
+
+  dispose() {
+    for (const [k, chunk] of this.chunks) {
+      this.scene.remove(chunk.mesh);
+      chunk.dispose();
+      const propGroup = this.props.get(k);
+      if (propGroup) {
+        this.scene.remove(propGroup);
+        propGroup.traverse((obj) => {
+          if (obj instanceof THREE.Mesh) {
+            obj.geometry.dispose();
+            (obj.material as THREE.Material).dispose();
+          }
+        });
+      }
+    }
+    this.chunks.clear();
+    this.props.clear();
+  }
 }
