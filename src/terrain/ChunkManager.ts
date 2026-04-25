@@ -69,7 +69,18 @@ export class ChunkManager {
   getActiveProps(): Array<{ position: THREE.Vector3; radius: number }> {
     const result: Array<{ position: THREE.Vector3; radius: number }> = [];
     for (const group of this.props.values()) {
-      result.push({ position: group.position, radius: group.userData.collisionRadius as number });
+      type Sub = { lx: number; lz: number; radius: number };
+      const subs = group.userData.subColliders as Sub[] | undefined;
+      if (subs) {
+        group.updateWorldMatrix(false, false);
+        for (const sc of subs) {
+          const worldPos = new THREE.Vector3(sc.lx, 0, sc.lz);
+          group.localToWorld(worldPos);
+          result.push({ position: worldPos, radius: sc.radius });
+        }
+      } else {
+        result.push({ position: group.position, radius: group.userData.collisionRadius as number });
+      }
     }
     return result;
   }

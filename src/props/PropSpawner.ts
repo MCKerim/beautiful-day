@@ -20,9 +20,16 @@ function seededRand(seed: number): () => number {
 
 const BUILDERS = [buildChair, buildTable, buildDoorframe, buildStreetlight, buildTV, buildCabinet];
 
+function hashCoords(cx: number, cz: number): number {
+  let h = Math.imul(cx ^ 0xdeadbeef, 0x9e3779b9) ^ Math.imul(cz ^ 0x12345678, 0x6c62272e);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x45d9f3b);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
 export function spawnPropsForChunk(cx: number, cz: number): THREE.Group | null {
-  const seed = (cx * 73856093) ^ (cz * 19349663);
-  const rand = seededRand(seed);
+  const rand = seededRand(hashCoords(cx, cz));
 
   if (rand() > SPAWN_CHANCE) return null;
 
@@ -41,6 +48,15 @@ export function spawnPropsForChunk(cx: number, cz: number): THREE.Group | null {
   group.rotation.x = rand() * Math.PI * 2;
   group.rotation.z = rand() * Math.PI * 2;
   group.userData.collisionRadius = COLLISION_RADII[idx] * PROP_SCALE;
+
+  // Doorframe: two post colliders so the opening stays passable
+  // offsets are in pre-scale local space; localToWorld handles scale+rotation
+  if (idx === 2) {
+    group.userData.subColliders = [
+      { lx: -0.5, lz: 0, radius: 0.15 },
+      { lx:  0.5, lz: 0, radius: 0.15 },
+    ];
+  }
 
   return group;
 }
