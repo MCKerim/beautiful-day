@@ -35,6 +35,11 @@ document.addEventListener('pointerlockchange', () => {
   locked ? audio.resume() : audio.suspend();
 });
 
+// --- Debug ---
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyF') worldManager.switchWorld();
+});
+
 // --- Resize ---
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

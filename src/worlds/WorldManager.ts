@@ -36,6 +36,10 @@ export class WorldManager {
   get activeWorld(): IWorld { return this.current; }
   get isFalling(): boolean { return this.falling; }
 
+  switchWorld() {
+    if (!this.falling) this.triggerClip();
+  }
+
   update(dt: number, elapsed: number, playerPos: THREE.Vector3, isMoving: boolean) {
     if (this.falling) {
       this.updateFall(dt);
